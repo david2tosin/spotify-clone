@@ -35,31 +35,62 @@ export const MyUserContextProvider = (props: Props) => {
   const getUserDetails = supabase.from('users').select('*').single()
   const getSubscription = supabase.from('subscriptions').select('*, prices(*,(products(*))').in('status', ['trialing', 'active']).single()
 
+  // useEffect(() => {
+  //   if (user && !isLoadingData && !userDetails && !subscription) {
+  //     setIsLoadingData(true)
+
+  //     Promise.allSettled([getUserDetails(), getSubscription()])
+  //       .then((results) => {
+  //         const userDetailsPromise = results[0]
+  //         const subscriptionPromise = results[1]
+
+  //         if (userDetailsPromise.status === 'fulfilled') {
+  //           setUserDetails(userDetailsPromise.value.data as UserDetails)
+  //         }
+
+  //         if (subscriptionPromise.status === 'fulfilled') {
+  //           setSubscription(subscriptionPromise.value.data as Subscription)
+  //         }
+
+  //         setIsLoadingData(false)
+  //       }
+  //     )
+  //   } else if (!user && !isLoadingUser && !isLoadingData) {
+  //     setUserDetails(null)
+  //     setSubscription(null)
+  //   }
+  // },[user, isLoadingUser])
+
   useEffect(() => {
+  const fetchData = async () => {
     if (user && !isLoadingData && !userDetails && !subscription) {
-      setIsLoadingData(true)
+      setIsLoadingData(true);
 
-      Promise.allSettled([getUserDetails(), getSubscription()])
-        .then((results) => {
-          const userDetailsPromise = results[0]
-          const subscriptionPromise = results[1]
+      try {
+        const userDetailsPromise = await supabase.from('users').select('*').single();
+        const subscriptionPromise = await supabase.from('subscriptions').select('*, prices(*,products(*))').in('status', ['trialing', 'active']).single();
 
-          if (userDetailsPromise.status === 'fulfilled') {
-            setUserDetails(userDetailsPromise.value.data as UserDetails)
-          }
-
-          if (subscriptionPromise.status === 'fulfilled') {
-            setSubscription(subscriptionPromise.value.data as Subscription)
-          }
-
-          setIsLoadingData(false)
+        if (userDetailsPromise.data) {
+          setUserDetails(userDetailsPromise.data as UserDetails);
         }
-      )
+
+        if (subscriptionPromise.data) {
+          setSubscription(subscriptionPromise.data as Subscription);
+        }
+      } catch (error) {
+        // Handle error if necessary
+      }
+
+      setIsLoadingData(false);
     } else if (!user && !isLoadingUser && !isLoadingData) {
-      setUserDetails(null)
-      setSubscription(null)
+      setUserDetails(null);
+      setSubscription(null);
     }
-  },[user, isLoadingUser])
+  };
+
+  fetchData();
+}, [user, isLoadingUser]);
+
 
   const value = {
     accessToken,
